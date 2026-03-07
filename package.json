@@ -1,0 +1,14 @@
+{
+  "name": "paid-hotspot",
+  "version": "1.0.0",
+  "main": "wifi_manager.js",
+  "scripts": {
+    "start": "sudo node wifi_manager.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "mysql2": "^3.11.0",
+    "axios": "^1.7.7",
+    "body-parser": "^1.20.3"
+  }
+}

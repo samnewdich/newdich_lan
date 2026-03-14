@@ -27,6 +27,7 @@ const CHECK_PAID_API     = process.env.CHECK_PAID_API;
 const PORT = process.env.PORT;
 
 
+/*
 //function that blocks device from the network
 function blockDevice(ip) {
   exec(`iptables -A FORWARD -s ${ip} -j DROP`);
@@ -40,6 +41,21 @@ function unblockDevice(ip) {
   exec(`iptables -D FORWARD -s ${ip} -j DROP || true`);
   exec(`iptables -t nat -D PREROUTING -s ${ip} -p tcp --dport 80  -j DNAT --to ${GATEWAY_IP}:80 || true`);
   exec(`iptables -t nat -D PREROUTING -s ${ip} -p tcp --dport 443 -j DNAT --to ${GATEWAY_IP}:80 || true`);
+}
+*/
+//function that blocks device from the network
+function blockDevice(ip) {
+  exec(`iptables -A FORWARD -s ${ip} -j DROP`);
+  exec(`iptables -t nat -A PREROUTING -s ${ip} -p tcp --dport ${PORT}  -j DNAT --to ${GATEWAY_IP}:${PORT}`);
+  exec(`iptables -t nat -A PREROUTING -s ${ip} -p tcp --dport 443 -j DNAT --to ${GATEWAY_IP}:${PORT}`);
+}
+
+
+//function that unblocks device from the network
+function unblockDevice(ip) {
+  exec(`iptables -D FORWARD -s ${ip} -j DROP || true`);
+  exec(`iptables -t nat -D PREROUTING -s ${ip} -p tcp --dport ${PORT}  -j DNAT --to ${GATEWAY_IP}:${PORT} || true`);
+  exec(`iptables -t nat -D PREROUTING -s ${ip} -p tcp --dport 443 -j DNAT --to ${GATEWAY_IP}:${PORT} || true`);
 }
 
 
@@ -59,10 +75,10 @@ setInterval(async () => {
       if (ip === GATEWAY_IP) continue;
 
       try {
-        const res = await axios.get(`${CHECK_PAID_API}?mac=${encodeURIComponent(mac)}`);
+        const res = await axios.get(`${CHECK_PAID_API}?mac=${encodeURIComponent(mac)}&current_time=${Math.floor(Date.now() / 1000)}`);
         const { paid } = res.data;
 
-        if (paid) {
+        if(paid || paid ==="yes" || paid === true) {
           unblockDevice(ip);
         } else {
           blockDevice(ip);
@@ -79,7 +95,7 @@ setInterval(async () => {
 // Redirect all HTTP to public payment page (minimal local server)
 app.use((req, res) => {
   const ip = req.connection.remoteAddress.replace('::ffff:', '');
-  const redirectUrl = `${PUBLIC_PAYMENT_URL}?mac=${encodeURIComponent('DEVICE_MAC')}&ip=${encodeURIComponent(ip)}`;
+  const redirectUrl = `${PUBLIC_PAYMENT_URL}?mac=${encodeURIComponent('DEVICE_MAC')}&ip=${encodeURIComponent(ip)}&current_time=${Math.floor(Date.now() / 1000)}`;
   res.redirect(302, redirectUrl);
 });
 
